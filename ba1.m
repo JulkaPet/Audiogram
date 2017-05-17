@@ -513,16 +513,19 @@ t3 = linespace(1/FS, int_dur, int_dur*FS);
 rep_rate = 4;                               % number of signals
 sildur = 0.5 - (rep_rate * sig_int);        % silence duration between signals (sec)
 
+
 for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of the NEXT frequency to present (not the currently/last presented one)!
     
     freq = freqs(freq_order(fc));       % current frequency
-    c = sig_dur ;                     % total signal duration incl. ramps
+    dur = sig_dur 2*ramp_dur ;          % total signal duration incl. ramps
     dur2 = dur + 0.1;                   % duration for initial generation of sinusoid, including additional time
     %%%%%%%%%%%%%%%% --> do I have to change additional time? what is it
     %%%%%%%%%%%%%%%% for?
     t = linspace(1/FS, dur, dur*FS);    % time vector of final playback sinusoids
     t2 = linspace(1/FS, dur2, dur2*FS); % time vector of initial playback sinusoids
+    t4=rep_rate*(length(t)+length(t3)); % length of total time vector
     
+        
     disp(' ');
     disp('==============================================================');
     disp(['BA1: NEW FREQUENCY: ' num2str(freq) ' kHz']);
@@ -535,16 +538,15 @@ for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of t
     handles = guidata(hObject);
     
     % PREPARE PLAYBACK OF CURRENT FREQUENCY FOR ALL INTENSITIES:
-    sig = NaN(length(t),length(peaks));
+    sig = NaN(length(t4),length(peaks));
     for ic = 1:length(peaks),
         
         % generate sinusoidal signal:
-        single_sig = peaks(ic) * sin(t*2*pi * freq*1000);  % signal length with ramps
-        sig1 =  single_sig + zeros(size(t3));              % one signal with intersignal intervall                     
-        %%%%%%%%%%%%%%%% modifying signal here
+        single_sig = peaks(ic) * sin(t*2*pi * freq*1000);   % signal length enlongated for the time of the ramps which will be applied later
+        %sig1 =  single_sig + zeros(size(t3));               % one signal with intersignal intervall  
         
         % apply compensatory IR:
-        fsig1 = filter(irc,1,sig1);
+        fsig1 = filter(irc,1,single_sig);
         
         % cut-out a shorter part from fsig1, starting at the end, to
         % exclude the initial attack time caused by the filter:
@@ -556,6 +558,9 @@ for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of t
         downramp = fliplr(upramp);
         fsig1(1:length(upramp)) =  fsig1(1:length(upramp)).* upramp;
         fsig1(end-length(downramp)+1 : end) = fsig1(end-length(downramp)+1 : end) .* downramp;
+        
+        % introduce repetition
+        fsig1= fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3))
         
         % add fsig1 to sig:
         sig(:,ic) = col(fsig1);
