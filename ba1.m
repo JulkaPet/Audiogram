@@ -513,16 +513,19 @@ t3 = linespace(1/FS, int_dur, int_dur*FS);
 rep_rate = 4;                               % number of signals
 sildur = 0.5 - (rep_rate * sig_int);        % silence duration between signals (sec)
 
+
 for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of the NEXT frequency to present (not the currently/last presented one)!
     
     freq = freqs(freq_order(fc));       % current frequency
-    c = sig_dur ;                     % total signal duration incl. ramps
+    dur = sig_dur 2*ramp_dur ;          % total signal duration incl. ramps
     dur2 = dur + 0.1;                   % duration for initial generation of sinusoid, including additional time
     %%%%%%%%%%%%%%%% --> do I have to change additional time? what is it
     %%%%%%%%%%%%%%%% for?
     t = linspace(1/FS, dur, dur*FS);    % time vector of final playback sinusoids
     t2 = linspace(1/FS, dur2, dur2*FS); % time vector of initial playback sinusoids
+    t4=rep_rate*(length(t)+length(t3)); % length of total time vector
     
+        
     disp(' ');
     disp('==============================================================');
     disp(['BA1: NEW FREQUENCY: ' num2str(freq) ' kHz']);
@@ -535,16 +538,15 @@ for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of t
     handles = guidata(hObject);
     
     % PREPARE PLAYBACK OF CURRENT FREQUENCY FOR ALL INTENSITIES:
-    sig = NaN(length(t),length(peaks));
+    sig = NaN(length(t4),length(peaks));
     for ic = 1:length(peaks),
         
         % generate sinusoidal signal:
-        single_sig = peaks(ic) * sin(t*2*pi * freq*1000);  % signal length with ramps
-        sig1 =  single_sig + zeros(size(t3));              % one signal with intersignal intervall                     
-        %%%%%%%%%%%%%%%% modifying signal here
+        single_sig = peaks(ic) * sin(t*2*pi * freq*1000);   % signal length enlongated for the time of the ramps which will be applied later
+        %sig1 =  single_sig + zeros(size(t3));               % one signal with intersignal intervall  
         
         % apply compensatory IR:
-        fsig1 = filter(irc,1,sig1);
+        fsig1 = filter(irc,1,single_sig);
         
         % cut-out a shorter part from fsig1, starting at the end, to
         % exclude the initial attack time caused by the filter:
@@ -556,6 +558,9 @@ for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of t
         downramp = fliplr(upramp);
         fsig1(1:length(upramp)) =  fsig1(1:length(upramp)).* upramp;
         fsig1(end-length(downramp)+1 : end) = fsig1(end-length(downramp)+1 : end) .* downramp;
+        
+        % introduce repetition
+        fsig1= fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3))
         
         % add fsig1 to sig:
         sig(:,ic) = col(fsig1);
@@ -637,7 +642,170 @@ newmessage(hObject, handles, {'===== BA1: ALL FREQS PRESENTED to this Moth! ====
 handles = guidata(hObject);
 
 
+%% PROTOCOL_BA_SINUS_2: run Protocol 'BA Superstimulus' ==========
+function protocol_BA_Sinus_2 (hObject, handles, data_pn, results,freqs,freq_order,freq_counter, irc)
 
+FS = handles.FS;
+
+% set trial information:
+spec_s = get(handles.popup_spec,'String');
+spec_v = get(handles.popup_spec,'Value');
+spec_str = spec_s{spec_v};
+spec_str = spec_str(1:5);
+
+prot_s = get(handles.popup_protocol,'String');
+prot_v = get(handles.popup_protocol,'Value');
+prot_str = prot_s{prot_v};
+
+indnum = str2double(get(handles.edit_individual, 'String'));
+indnum_str = sprintf('%03.0f',indnum);         % string with 3 leading digits; matrix of 000 which get filled up with "indnum"
+
+date_num = now;
+date_str = datestr(date_num,'YYYY-mm-DD_HH-MM-SS');
+
+prot_num = 3;                           % protocol_number: 2 = Audiogram with repetitive sinusoids
+
+% define signal parameters + playback sequence:
+dBs = 20 : 5 : 90;                  % playback level (dB peSPL)
+dBs = dBs - max(dBs);               % playback level (dB FS)
+peak = 10.^(10/20) * 0.01;          % playback amplitude of loudest pulse (90 dB peSPL) (lin. units)
+peaks = 10.^(dBs/20) * peak;        % playback amplitude of all pulses (lin. units)
+
+sig_dur = 0.004;                            % duration of each sine wave without ramps (s)
+ramp_dur = 0.0002;                          % ramp duration
+sig_int = 0.03;                             % signal interval
+int_dur = sig_int - (sig_dur + 2*ramp_dur); % duration of silence after each signal (intersignal interval)
+t3 = linespace(1/FS, int_dur, int_dur*FS);
+rep_rate = 4;                               % number of signals
+sildur = 0.5 - (rep_rate * sig_int);        % silence duration between signals (sec)
+
+
+for fc = freq_counter:length(freqs),    % Freq-Counter indicates the number of the NEXT frequency to present (not the currently/last presented one)!
+    
+    freq = freqs(freq_order(fc));       % current frequency
+    dur = sig_dur 2*ramp_dur ;          % total signal duration incl. ramps
+    dur2 = dur + 0.1;                   % duration for initial generation of sinusoid, including additional time
+    %%%%%%%%%%%%%%%% --> do I have to change additional time? what is it
+    %%%%%%%%%%%%%%%% for?
+    t = linspace(1/FS, dur, dur*FS);    % time vector of final playback sinusoids
+    t2 = linspace(1/FS, dur2, dur2*FS); % time vector of initial playback sinusoids
+    t4=rep_rate*(length(t)+length(t3)); % length of total time vector
+    
+        
+    disp(' ');
+    disp('==============================================================');
+    disp(['BA1: NEW FREQUENCY: ' num2str(freq) ' kHz']);
+    disp(['     (# ' num2str(fc) ' out of ' num2str(length(freqs)) ' frequencies)']);
+    newmessage(hObject, handles, {' ';...
+        '============================================';...
+        ['BA1: NEW FREQUENCY: ' num2str(freq) ' kHz'];...
+        ['     (# ' num2str(fc) ' out of ' num2str(length(freqs)) ' frequencies)'];...
+        ' '});
+    handles = guidata(hObject);
+    
+    % PREPARE PLAYBACK OF CURRENT FREQUENCY FOR ALL INTENSITIES:
+    sig = NaN(length(t4),length(peaks));
+    for ic = 1:length(peaks),
+        
+        % generate sinusoidal signal:
+        single_sig = peaks(ic) * sin(t*2*pi * freq*1000);   % signal length enlongated for the time of the ramps which will be applied later
+        %sig1 =  single_sig + zeros(size(t3));               % one signal with intersignal intervall  
+        
+        % apply compensatory IR:
+        fsig1 = filter(irc,1,single_sig);
+        
+        % cut-out a shorter part from fsig1, starting at the end, to
+        % exclude the initial attack time caused by the filter:
+        fsig1 = fsig1(end-0.01*FS-dur*FS+1 : end-0.01*FS);
+        
+        % apply raised cosine ramps:
+        tr = linspace(0, pi, ramp_dur*FS);
+        upramp = (-1*cos(tr)+1)/2;
+        downramp = fliplr(upramp);
+        fsig1(1:length(upramp)) =  fsig1(1:length(upramp)).* upramp;
+        fsig1(end-length(downramp)+1 : end) = fsig1(end-length(downramp)+1 : end) .* downramp;
+        
+        % introduce repetition
+        fsig1= fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3)) + fsig1 + zeros(size(t3))
+        
+        % add fsig1 to sig:
+        sig(:,ic) = col(fsig1);
+    end
+    
+    % start video, play signal, retrieve behavioural data, stop video:
+    freq_str = sprintf('%02.0f',freq);         % data into string with two leading figures (in front of the decimal point)
+    vidfilename{1} = [data_pn prot_str '_' freq_str '-kHz_' spec_str '_' indnum_str '_' date_str '_Cam01.avi'];  % definition of video file name
+    vidfilename{2} = [data_pn prot_str '_' freq_str '-kHz_' spec_str '_' indnum_str '_' date_str '_Cam02.avi'];
+    [recsig, xruns] = smp_playrec_audiogram(sig,FS,sildur, vidfilename);
+    disp(' ');
+    disp(['BA1: Finished smp_playrec_audiogram (Sinus). size(recsig) = ' num2str(size(recsig)) ', dur(recsig) = ' num2str(length(recsig)/FS) ' sec, # xruns = ' num2str(xruns)]);
+    
+    % Save measured moth behavioural data as WAV-file:
+    % - WAV-filename:
+    wav_fn = [prot_str '_' freq_str '-kHz_' spec_str '_' indnum_str '_' date_str];
+    % - mic-recording. Assuming that we use the full dynamic range of the
+    % Fireface Input of up to 1.78 Vpk, we divide the mic-recording by 2 to
+    % come within the range of +/-1 that can be saved as wav-file:
+    mic_rec = recsig(:,1) / 2;
+    % - speaker recordings:
+    sp_rec = recsig(:,2:3);
+    if max(max(abs(sp_rec))) > 0.99,    % to check for cliping
+        f = max([2, ceil(max(max(abs(sp_rec)))/0.99)]);
+        sp_rec = sp_rec./f;
+        fstr = sprintf('%02.0f',f);
+        wav_fn = [wav_fn '_DIV' fstr];  % adds value of division to the filename
+    end
+    audiowrite([data_pn wav_fn '.wav'], [sp_rec, mic_rec] ,FS, 'BitsPerSample',16);
+      
+    % save meta trial data:
+    counter = size(results,1) + 1;
+    trial_info = [counter, date_num/1e5, indnum, prot_num, freq];
+    results = [results; trial_info];
+    freq_counter = freq_counter + 1;    % Freq-Counter indicates the number of the NEXT frequency to present (not the currently/last presented one)!
+    save([data_pn '\results_' spec_str '_Ind' indnum_str '.mat'], 'results','freqs','freq_order','freq_counter');
+    disp('BA1: All Data (Video, Audio + Meta) Saved!');
+    
+    % Plot recorded data:
+    t = linspace(1/FS, length(sp_rec)/FS, length(sp_rec));
+    figure(2)
+    subplot(3,1,1);
+    plot(t,mic_rec, 'k');
+    ylabel('mic (arb. lin. units)', 'FontSize',8)
+    
+    subplot(3,1,2);
+    plot(t,sp_rec(:,1), 'r');   % speaker 1 = Left
+    ylabel({'speaker 1 = ';'LEFT (arb. lin. units)'}, 'FontSize',8)
+    
+    subplot(3,1,3);
+    plot(t,sp_rec(:,2), 'b');   % speaker 2 = Right
+    xlabel('time (sec)', 'FontSize',8);
+    ylabel({'speaker 2 = ';'RIGHT (arb. lin. units)'}, 'FontSize',8)
+    
+    % check for User Input to play next frequency:
+    if fc < length(freqs),
+        in = 'x';
+        while ~strcmp('n',in),
+            in = input(['BA1: Type "n" to continue with next frequency (' num2str(freqs(fc+1)) ' kHz): '],'s');
+            pause(0.01);
+        end
+        
+    else
+        disp(' ');
+        disp('BA1: FINISHED WITH LAST FREQUENCY OF AUDIOGRAM!');
+        disp(' ');
+        disp('=========================================================');
+        disp('=========================================================');
+        disp(' ');
+    end
+end
+
+% SET GUI & PARAMETERS:
+set(handles.push_start, 'Enable','on');        % activate Start Button
+set(handles.popup_spec, 'Enable','on');        % activate Species Selection
+set(handles.popup_protocol, 'Enable','on');    % activate Protocol Selection
+set(handles.push_stop, 'Enable','off');          % deactivate Stop Button
+newmessage(hObject, handles, {'===== BA1: ALL FREQS PRESENTED to this Moth! =====';' '});
+handles = guidata(hObject);
 
 
 %% PROTOCOL_BA_silence: run Protocol 'silence control' ==========
@@ -661,7 +829,7 @@ indnum_str = sprintf('%03.0f',indnum);         % matrix of 000 which get filled 
 date_num = now;
 date_str = datestr(date_num,'YYYY-mm-DD_HH-MM-SS');
 
-prot_num = 2;                           % protocol_number: 2 = Silence control / pre-audiogram
+prot_num = 4;                           % protocol_number: 2 = Silence control / pre-audiogram
 
 % define signal parameters + playback sequence:
 dBs = 20 : 5 : 90;                  % playback level (dB peSPL)
