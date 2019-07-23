@@ -60,13 +60,15 @@ BA_njan_int <- BA_njan[which(BA_njan$int != 'NA'),]
 
 marker = list(color = colorRampPalette(brewer.pal(9,"Blues"))(16))
 
-BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_001'),]
-BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_001' & BA_njan_int$int_s == '70dB'),]
-BA_njan_35 <- BA_njan_35[!BA_njan_35$int_s %in% c('sil', 'NA'),]
+BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_008'),]
+BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_001' & BA_njan_int$int == '70dB'),]
+BA_njan_35 <- BA_njan_35[!BA_njan_35$int %in% c('sil', 'NA'),]
 
-ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int_s, colour = int_s)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-80,-50)
+ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50)
 
-summary(BA_njan_int_ex)
+BA_njan_int
+
+ggplot(BA_njan_int, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50) + facet_grid(. ~ ID)
 
 
 ### playground over
