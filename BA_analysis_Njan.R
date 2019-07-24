@@ -54,22 +54,240 @@ dim(BA_njan)[1]/160
 
 
 BA_njan_int <- BA_njan[which(BA_njan$int != 'NA'),]
+BA_njan_int <- BA_njan_int[which(BA_njan_int$int != 'sil'),]
 
 #BA_njan_int$windows_perint <- as.numeric(BA_njan_int$windows_perint)
 
 
 marker = list(color = colorRampPalette(brewer.pal(9,"Blues"))(16))
 
-BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_008'),]
+BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_001'),]
 BA_njan_35 <- BA_njan_int[which(BA_njan_int$freq == 5 & BA_njan_int$ID == 'Njan_001' & BA_njan_int$int == '70dB'),]
 BA_njan_35 <- BA_njan_35[!BA_njan_35$int %in% c('sil', 'NA'),]
 
 ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50)
 
+
+
+
+
+
+### 10m5off
+
+BA_njan_10m5off <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$stimulus== '2-Sinus-10x4ms' & BA_njan_int$light== 'off'),]
+unique(BA_njan_10m5off$ID)
+
+plot_list_10m5off = list()
+for (c_i in unique(BA_njan_10m5off$ID)){
+  BA_njan_35 <- BA_njan_10m5off[which(BA_njan_10m5off$freq == 35 & BA_njan_10m5off$ID == c_i),]
+  plot <- ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-45) + ggtitle(c_i) + theme(legend.position="none", axis.title.y = element_blank(), axis.title.x = element_blank())
+  plot_list_10m5off[[c_i]] = plot
+}
+
+
+
+tiff("10x5off.tiff",  width = 28,  height = 40,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(ceiling(length(  unique(BA_njan_10m5off$ID)) / 3), 3)))
+c <- 1
+k <- 1
+for (i in unique(BA_njan_10m5off$ID))  {
+  if (c == ceiling(length(unique(BA_njan_10m5off$ID))/3) + 1) {
+    k <- k + 1
+    c <- 1
+  } else if (c == (ceiling(length(unique(BA_njan_10m5off$ID))/3)*2) + 1) {
+    k <- k + 1
+    c <- 1
+  }
+  print(plot_list_10m5off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
+  c <- c + 1
+}
+dev.off()
+
+
+### 10m5on
+
+BA_njan_10m5on <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$stimulus== '2-Sinus-10x4ms' & BA_njan_int$light== 'on'),]
+unique(BA_njan_10m5on$ID)
+
+plot_list_10m5on = list()
+for (c_i in unique(BA_njan_10m5on$ID)){
+  BA_njan_35 <- BA_njan_10m5on[which(BA_njan_10m5on$freq == 35 & BA_njan_10m5on$ID == c_i),]
+  plot <- ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-45) + ggtitle(c_i) + theme(legend.position="none", axis.title.y = element_blank(), axis.title.x = element_blank())
+  plot_list_10m5on[[c_i]] = plot
+}
+
+
+tiff("10x5on.tiff",  width = 28,  height = 40,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(ceiling(length(  unique(BA_njan_10m5on$ID)) / 3), 3)))
+c <- 1
+k <- 1
+for (i in unique(BA_njan_10m5on$ID))  {
+  if (c == ceiling(length(unique(BA_njan_10m5on$ID))/3) + 1) {
+    k <- k + 1
+    c <- 1
+  } else if (c == (ceiling(length(unique(BA_njan_10m5on$ID))/3)*2) + 1) {
+    k <- k + 1
+    c <- 1
+  }
+  print(plot_list_10m5on[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
+  c <- c + 1
+}
+dev.off()
+
+
+### 5m5off
+
+BA_njan_5m5off <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$stimulus== '2-Sinus-5x4ms' & BA_njan_int$light== 'off'),]
+unique(BA_njan_5m5off$ID)
+
+plot_list_5m5off = list()
+for (c_i in unique(BA_njan_5m5off$ID)){
+  BA_njan_35 <- BA_njan_5m5off[which(BA_njan_5m5off$freq == 35 & BA_njan_5m5off$ID == c_i),]
+  plot <- ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-45) + ggtitle(c_i) + theme(legend.position="none", axis.title.y = element_blank(), axis.title.x = element_blank())
+  plot_list_5m5off[[c_i]] = plot
+}
+
+
+tiff("5m5off.tiff",  width = 28,  height = 40,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(ceiling(length(  unique(BA_njan_5m5off$ID)) / 3), 3)))
+c <- 1
+k <- 1
+for (i in unique(BA_njan_5m5off$ID))  {
+  if (c == ceiling(length(unique(BA_njan_5m5off$ID))/3) + 1) {
+    k <- k + 1
+    c <- 1
+  } else if (c == (ceiling(length(unique(BA_njan_5m5off$ID))/3)*2) + 1) {
+    k <- k + 1
+    c <- 1
+  }
+  print(plot_list_5m5off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
+  c <- c + 1
+}
+dev.off()
+
+
+
+### 20off
+
+BA_njan_20off <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$stimulus== '1-Sinus-20ms' & BA_njan_int$light== 'off'),]
+unique(BA_njan_20off$ID)
+
+plot_list_20off = list()
+for (c_i in unique(BA_njan_20off$ID)){
+  BA_njan_35 <- BA_njan_20off[which(BA_njan_20off$freq == 35 & BA_njan_20off$ID == c_i),]
+  plot <- ggplot(BA_njan_35, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-45) + ggtitle(c_i) + theme(legend.position="none", axis.title.y = element_blank(), axis.title.x = element_blank())
+  plot_list_20off[[c_i]] = plot
+}
+
+
+tiff("20off.tiff",  width = 28,  height = 40,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(ceiling(length(  unique(BA_njan_20off$ID)) / 3), 3)))
+c <- 1
+k <- 1
+for (i in unique(BA_njan_20off$ID))  {
+  if (c == ceiling(length(unique(BA_njan_20off$ID))/3) + 1) {
+    k <- k + 1
+    c <- 1
+  } else if (c == (ceiling(length(unique(BA_njan_20off$ID))/3)*2) + 1) {
+    k <- k + 1
+    c <- 1
+  }
+  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
+  c <- c + 1
+}
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BA_njan_35_1 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_089'),]
+plot1 <- ggplot(BA_njan_35_1, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_089') + theme(legend.position="none")
+
+
+BA_njan_35_2 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_088'),]
+plot2 <- ggplot(BA_njan_35_2, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_088') + theme(legend.position="none")
+
+
+BA_njan_35_3 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_087'),]
+plot3 <- ggplot(BA_njan_35_3, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_087') + theme(legend.position="none")
+
+
+BA_njan_35_4 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_039'),]
+plot4 <- ggplot(BA_njan_35_4, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_039') + theme(legend.position="none")
+
+
+BA_njan_35_5 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_037'),]
+plot5 <- ggplot(BA_njan_35_5, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_037') + theme(legend.position="none")
+
+
+BA_njan_35_6 <- BA_njan_int[which(BA_njan_int$freq == 35 & BA_njan_int$ID == 'Njan_016'),]
+plot6 <- ggplot(BA_njan_35_6, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line(size = 1.5) + scale_colour_manual(values=c  (marker$color)) + ylim(-85,-50) + ggtitle('Njan_016') + theme(legend.position="none")
+
+library(grid)
+
+tiff("example_traces_BA.tiff", width = 14, height = 21, units = 'cm', res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(3, 2)))   
+print(plot1, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))         
+print(plot2, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+print(plot3, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
+print(plot4, vp = viewport(layout.pos.row = 2, layout.pos.col = 2))
+print(plot5, vp = viewport(layout.pos.row = 3, layout.pos.col = 1))
+print(plot6, vp = viewport(layout.pos.row = 3, layout.pos.col = 2))
+dev.off()
+
+
+
+
+
+
 BA_njan_int
 
 ggplot(BA_njan_int, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50) + facet_grid(. ~ ID)
 
+BA_njan_int_1 <- BA_njan_int[1:93755,]
+
+ggplot(BA_njan_int_1, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50) + facet_grid(. ~ ID)
+
+BA_njan_int_10 <- BA_njan_int[1:20795,]
+
+ggplot(BA_njan_int_10, aes(as.factor(windows_perint),RMS_dB, group = int, colour = int)) + geom_line() + scale_colour_manual(values=c(marker$color)) + ylim(-85,-50) + facet_grid(. ~ ID)
 
 ### playground over
 
@@ -221,7 +439,12 @@ BA_threshold
 BA_threshold <- BA_threshold[!BA_threshold$threshold %in% c('NA'),]
 BA_threshold <- BA_threshold [complete.cases(BA_threshold ), ]
 
-ggplot (BA_threshold, aes(x=as.factor(freq), y=as.numeric(threshold))) + geom_boxplot() + facet_grid(stimulus ~ light)
+ggplot (BA_threshold, aes(x=as.factor(freq), y=as.numeric(threshold))) + 
+  geom_jitter(size = 1.5, alpha = 0.5, width = 0.15) +
+  geom_boxplot( alpha = 0.5) + 
+  stat_summary(fun.y=mean, colour="darkred", geom="point", 
+               shape=18, size=3,show_guide = FALSE) +
+  facet_grid(stimulus ~ light)
 
 
 
