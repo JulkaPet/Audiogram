@@ -6,7 +6,7 @@
 rm(list = ls())   #empties workspace
 
 getwd()         #shows path
-setwd("E:/BA/backup(2017)_all/")    #sets path
+setwd("F:/BA/backup(2017)_all/")    #sets path
 
 
 # load libraries
@@ -47,6 +47,135 @@ windows_perint <-
          levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", 'NA'))
 # adding both information to data
 BA_njan <- cbind(BA_njan, int, windows_perint)
+
+### save dataset to excel to make it accessable to MATLAB --> Machine learning test
+install.packages("xlsx")
+library("xlsx")
+write.xlsx(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.xlsx", sheetName = "all_windowNjan_with_intensities", 
+            col.names = TRUE)
+
+write.csv(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.csv")
+
+##### creating test and training dataset for machine learning --> means I have to assign reaction YES/NO to a number of flight traces
+##### How many manuall assignments? How to assign? Shall I ask different people to do it and then take the average?
+
+summary(BA_njan)
+
+#subset to 35kHz, 10x4, light=off
+BA_jan_sub <- BA_njan[which(BA_njan$stimulus == '2-Sinus-10x4ms' & BA_njan$freq == 35 & BA_njan$light == 'off' & BA_njan$int != 'sil'),]
+summary(BA_jan_sub)
+
+### vector of individuals that looked like they showed reaction --> subset for train and test dataset
+ind_rec <- c('Njan_037', 'Njan_091', 'Njan_032', 'Njan_038', 'Njan_087', 'Njan_088', 'Njan_089', 'Njan_071', 'Njan_074', 'Njan_001', 'Njan_011', 'Njan_012', 'Njan_024', 'Njan_014', 'Njan_025', 'Njan_016', 'Njan_009', 'Njan_046', 'Njan_055', 'Njan_049', 'Njan_052')
+
+
+BA_jan_sub_tt <- BA_njan[BA_njan$ID %in% ind_rec, ]
+summary(BA_jan_sub_tt$ID)
+
+BA_jan_sub_tt <- BA_jan_sub_tt[which(BA_jan_sub_tt$freq == 35 & BA_jan_sub_tt$int != 'sil' & BA_jan_sub_tt$int != 'NA' & BA_jan_sub_tt$light == 'off'),]
+summary(BA_jan_sub_tt$int)
+
+BA_jan_sub_tt$typ_res <- 0
+
+
+# for (c_r in dim(BA_jan_sub_tt)[1]/10){
+#   
+#  beg_r <- 1 + ((c_r - 1) * 10)  
+#   end_r <-  10 + ((c_r - 1) * 10)
+#   seq_r <- seq(beg_r, end_r, 1)
+#   
+#  gg <- ggplot(BA_jan_sub_tt[seq_r,], aes(as.factor(windows_perint), RMSdB, group = int)) + geom_line()
+# print(gg)
+#     typeOR <- readline("Reaction Y/N?")
+#   readline(prompt="Press [enter] to continue")
+#   BA_jan_sub_tt$typ_res[seq_r,] <-typeOR
+#   
+# }
+# 
+
+#### normalize test dataset for better comparison
+summary(BA_jan_sub_tt$RMSdB)
+
+
+
+
+plot_list_reac = list()
+
+for (c_r in 1:(dim(BA_jan_sub_tt)[1]/10)) {
+  beg_r <- 1 + ((c_r - 1) * 10)  
+  end_r <-  10 + ((c_r - 1) * 10)
+  seq_r <- seq(beg_r, end_r, 1)
+  ID_r <- unique(BA_jan_sub_tt$ID[seq_r])
+  ID_int <- unique(BA_jan_sub_tt$int[seq_r])
+  #min_y <- round(min(BA_jan_sub_tt$RMSdB[seq_r])) +0.5
+  dat_onetrace <- BA_jan_sub_tt[seq_r,]
+  
+  norm_vel <- (dat_onetrace$RMSdB[which(dat_onetrace$windows_perint == 5)] + dat_onetrace$RMSdB[which(dat_onetrace$windows_perint == 6)]) / 2
+
+  dat_onetrace$RMSdB_norm <- dat_onetrace$RMSdB - norm_vel
+  
+  gg <- ggplot(dat_onetrace, aes(as.factor(windows_perint), RMSdB_norm, group = int)) + geom_line() + 
+  geom_text( x = 1, y = -5, label= paste0(ID_r, ':', ID_int), aes(fontface=1), hjust = 0) + coord_cartesian(ylim =  c(-7.5,7.5)) + theme(axis.title.y = element_blank(), axis.title.x = element_blank())
+  plot_list_reac[[c_r]] = gg
+}
+
+
+
+
+
+plot_pp <- (dim(BA_jan_sub_tt)[1]/10)/4
+
+for (ci in 1:4){
+tiff(
+  paste0('reac', ci, '.tiff') ,
+  width = 54,
+  height = 80,
+  units = 'cm',
+  res = 600
+)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(ceiling(plot_pp / 4), 4)))
+c <- 1
+k <- 1
+for (i in 1: plot_pp)  {
+  if (c == ceiling(plot_pp / 4) + 1) {
+    k <- k + 1
+    c <- 1
+  } else if (c == (ceiling(plot_pp / 4) * 2) + 1) {
+    k <- k + 1
+    c <- 1
+  }
+  print(plot_list_reac[[((ci - 1) * plot_pp) + i]],
+        vp = viewport(layout.pos.row = c, layout.pos.col = k))
+  c <- c + 1
+}
+dev.off()
+}
+
+
+BA_jan_sub_tt <- BA_jan_sub_tt[,1:10]
+
+library("xlsx")
+
+write.table(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.txt")
+
+write.csv(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.csv")
+
+write.xlsx(BA_jan_sub_tt, "F:/BA/backup(2017)_all/test.xlsx")
+
+summary(BA_jan_sub_tt)
+
+
+###machine learning 
+
+set.seed(1234)
+
+
+
+
+
+
+
 
 
 
@@ -95,7 +224,7 @@ BA_njan_35 <- BA_njan_35[!BA_njan_35$int %in% c('sil', 'NA'), ]
 
 ggplot(BA_njan_35, aes(
   as.factor(windows_perint),
-  RMS_dB,
+  RMSdB,
   group = int,
   colour = int
 )) + geom_line(size = 2) + scale_colour_manual(values = c(marker$color)) + ylim(-85, -50)
@@ -114,27 +243,6 @@ BA_njan_10m5off <-
       BA_njan_int$light == 'off'
   ), ]
 unique(BA_njan_10m5off$ID)
-
-plot_list_10m5off = list()
-for (c_i in unique(BA_njan_10m5off$ID)) {
-  BA_njan_35 <-
-    BA_njan_10m5off[which(BA_njan_10m5off$freq == 35 &
-                            BA_njan_10m5off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35, aes(
-      as.factor(windows_perint),
-      RMS_dB,
-      group = int,
-      colour = int
-    )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -45) + ggtitle(c_i) + theme(
-      legend.position = "none",
-      axis.title.y = element_blank(),
-      axis.title.x = element_blank()
-    )
-  plot_list_10m5off[[c_i]] = plot
-}
-
-
 
 plot_list_10m5off = list()
 for (c_i in unique(BA_njan_10m5off$ID)) {
@@ -416,7 +524,7 @@ print(continious_10m5on, vp = viewport(layout.pos.row = 3, layout.pos.col = 1))
 print(continious_20off, vp = viewport(layout.pos.row = 4, layout.pos.col = 1))
 
 ########################################################################################################
-#### filtering out individuals that were not active at all (all values for all intensities below -80dB)
+#### filtering out individuals that were not active at all (all values for all intensities below -80dB) + normalization around stimulus onset
 
 non_act_vec <- c()
 act_vec <- c()
@@ -735,6 +843,12 @@ BA_diff <- data.frame(
   int = numeric(),
   dif56 = numeric(),
   dif57 = numeric(),
+  dif67 = numeric(),
+  dif68 = numeric(),
+  var_bef = numeric(),
+  var_aft = numeric(),
+  mean_bef = numeric(),
+  mean_aft = numeric(),
   stringsAsFactors = FALSE
 )
 
@@ -778,6 +892,20 @@ for (id in 1:length(inds)) {
         dif57 <-
           BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 5)]
         
+        dif67 <-
+          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 6)]
+        
+        dif68 <-
+          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 8)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 6)]
+        
+        var_bef <- var(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        
+        var_aft <- var(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+        
+        mean_bef <- mean(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        
+        mean_aft <- mean(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+        
         ### fill in table here
         BA_diff[c, 1] <- as.character(ID)
         BA_diff[c, 2] <- as.character(stimulus)
@@ -786,6 +914,12 @@ for (id in 1:length(inds)) {
         BA_diff[c, 5] <- as.character(int)
         BA_diff[c, 6] <- dif56
         BA_diff[c, 7] <- dif57
+        BA_diff[c, 8] <- dif67
+        BA_diff[c, 9] <- dif68
+        BA_diff[c, 10] <- var_bef
+        BA_diff[c, 11] <- var_aft
+        BA_diff[c, 12] <- mean_bef
+        BA_diff[c, 13] <- mean_aft
         
         c <- c + 1
         
@@ -797,14 +931,25 @@ for (id in 1:length(inds)) {
 
 #### histogram differnces ####
 
-ggplot (BA_diff, aes(dif56)) + geom_histogram(binwidth = 0.05) + xlim(0,13)
 
-ggplot (BA_diff, aes(dif57)) + geom_histogram(binwidth = 0.05) + xlim(0,13)
+BA_njan_act35_example <- BA_njan_act35[which(BA_njan_act35$ID == "Njan_016"),]
 
-
-
+ggplot(BA_njan_act35_example, aes(x = windows_perint, y= RMS_dB, group = int, colour = int)) + geom_line() 
 
 
+BA_diff_example <- BA_diff[which(BA_diff$ID == "Njan_016"),]
+
+ggplot (BA_diff_example, aes(dif56, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
+  geom_vline(xintercept=3) + ggtitle("dif56") 
+
+ggplot (BA_diff_example, aes(dif57, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
+  geom_vline(xintercept=3) + ggtitle("dif57")
+
+ggplot (BA_diff_example, aes(dif67, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
+  geom_vline(xintercept=3) + ggtitle("dif67")
+
+ggplot (BA_diff_example, aes(dif68, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
+  geom_vline(xintercept=3) + ggtitle("dif68")
 
 
 
