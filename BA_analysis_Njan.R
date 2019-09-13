@@ -13,7 +13,9 @@ setwd("F:/BA/backup(2017)_all/")    #sets path
 library(ggplot2)
 library(RColorBrewer)
 library(grid)
-
+library(tidyverse)
+library(dplyr)
+library(tidyr)
 
 
 # load data
@@ -49,12 +51,12 @@ windows_perint <-
 BA_njan <- cbind(BA_njan, int, windows_perint)
 
 ### save dataset to excel to make it accessable to MATLAB --> Machine learning test
-install.packages("xlsx")
-library("xlsx")
-write.xlsx(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.xlsx", sheetName = "all_windowNjan_with_intensities", 
-            col.names = TRUE)
-
-write.csv(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.csv")
+# install.packages("xlsx")
+# library("xlsx")
+# write.xlsx(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.xlsx", sheetName = "all_windowNjan_with_intensities", 
+#             col.names = TRUE)
+# 
+# write.csv(BA_njan, "E:/BA/backup(2017)_all/all_windowNjan_test_ints.csv")
 
 ##### creating test and training dataset for machine learning --> means I have to assign reaction YES/NO to a number of flight traces
 ##### How many manuall assignments? How to assign? Shall I ask different people to do it and then take the average?
@@ -153,17 +155,20 @@ dev.off()
 }
 
 
+
+
+
 BA_jan_sub_tt <- BA_jan_sub_tt[,1:10]
 
-library("xlsx")
-
-write.table(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.txt")
-
-write.csv(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.csv")
-
-write.xlsx(BA_jan_sub_tt, "F:/BA/backup(2017)_all/test.xlsx")
-
-summary(BA_jan_sub_tt)
+# library("xlsx")
+# 
+# write.table(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.txt")
+# 
+# write.csv(BA_jan_sub_tt, file = "E:/BA/backup(2017)_all/test.csv")
+# 
+# write.xlsx(BA_jan_sub_tt, "F:/BA/backup(2017)_all/test.xlsx")
+# 
+# summary(BA_jan_sub_tt)
 
 
 ###machine learning 
@@ -182,31 +187,31 @@ set.seed(1234)
 ### playground
 
 
-#ggplot(BA_njan, aes(x = window, y=RMS_dB)) + geom_boxplot()
+#ggplot(BA_njan, aes(x = window, y=RMSdB)) + geom_boxplot()
 
-#ggplot(BA_njan, aes(x = window, y=RMS_dB)) + geom_boxplot()
+#ggplot(BA_njan, aes(x = window, y=RMSdB)) + geom_boxplot()
 
 BA_njan_trim20 <-
   BA_njan[which(BA_njan$stimulus == '1-Sinus-20ms'), ]
 unique(BA_njan_trim20$light)
 
-#ggplot(BA_njan_trim20, aes(x = window, y=RMS_dB)) + geom_boxplot()
+#ggplot(BA_njan_trim20, aes(x = window, y=RMSdB)) + geom_boxplot()
 
 BA_njan_trim_s20_35kHz <-
   BA_njan_trim20[which(BA_njan_trim20$freq == 35), ]
 unique(BA_njan_trim_s20_35kHz$ID)
 
-#ggplot(BA_njan_trim_s20_35kHz, aes(x = window, y=RMS_dB, group=ID)) + geom_line()
+#ggplot(BA_njan_trim_s20_35kHz, aes(x = window, y=RMSdB, group=ID)) + geom_line()
 
 dim(BA_njan)[1] / 160
 
 
 
 
+BA_njan_ML <- read.table("Machine_learning_testdataset.txt", header = T)
 
 
-
-BA_njan_int <- BA_njan[which(BA_njan$int != 'NA'), ]
+BA_njan_int <- BA_njan_ML[which(BA_njan_ML$int != 'NA'), ]
 BA_njan_int <- BA_njan_int[which(BA_njan_int$int != 'sil'), ]
 
 #BA_njan_int$windows_perint <- as.numeric(BA_njan_int$windows_perint)
@@ -214,316 +219,23 @@ BA_njan_int <- BA_njan_int[which(BA_njan_int$int != 'sil'), ]
 
 marker = list(color = colorRampPalette(brewer.pal(9, "Blues"))(16))
 
+
 BA_njan_35 <-
   BA_njan_int[which(BA_njan_int$freq == 35 &
-                      BA_njan_int$ID == 'Njan_077'), ]
-BA_njan_35 <-
-  BA_njan_int[which(BA_njan_int$freq == 5 &
                       BA_njan_int$ID == 'Njan_001' & BA_njan_int$int == '70dB'), ]
 BA_njan_35 <- BA_njan_35[!BA_njan_35$int %in% c('sil', 'NA'), ]
 
 ggplot(BA_njan_35, aes(
   as.factor(windows_perint),
   RMSdB,
-  group = int,
-  colour = int
+  group = int
 )) + geom_line(size = 2) + scale_colour_manual(values = c(marker$color)) + ylim(-85, -50)
 
 
-
-########################################################################################################
-#### plotting all individuals seperated split by type of stimuli (without any filter)
-
-### 10m5off
-
-BA_njan_10m5off <-
-  BA_njan_int[which(
-    BA_njan_int$freq == 35 &
-      BA_njan_int$stimulus == '2-Sinus-10x4ms' &
-      BA_njan_int$light == 'off'
-  ), ]
-unique(BA_njan_10m5off$ID)
-
-plot_list_10m5off = list()
-for (c_i in unique(BA_njan_10m5off$ID)) {
-  BA_njan_35 <-
-    BA_njan_10m5off[which(BA_njan_10m5off$freq == 35 &
-                            BA_njan_10m5off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35, aes(
-      as.factor(windows_perint),
-      RMS_dB,
-      group = int,
-      colour = int
-    )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -45) + ggtitle(c_i) + theme(
-      legend.position = "none",
-      axis.title.y = element_blank(),
-      axis.title.x = element_blank()
-    )
-  plot_list_10m5off[[c_i]] = plot
-}
+summary(BA_njan_int)
 
 
 
-tiff(
-  "10x5off.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_10m5off$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_10m5off$ID))  {
-  if (c == ceiling(length(unique(BA_njan_10m5off$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(
-    BA_njan_10m5off$ID
-  )) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_10m5off[[i]],
-        vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-
-### 10m5on
-
-BA_njan_10m5on <-
-  BA_njan_int[which(
-    BA_njan_int$freq == 35 &
-      BA_njan_int$stimulus == '2-Sinus-10x4ms' &
-      BA_njan_int$light == 'on'
-  ), ]
-unique(BA_njan_10m5on$ID)
-
-plot_list_10m5on = list()
-for (c_i in unique(BA_njan_10m5on$ID)) {
-  BA_njan_35 <-
-    BA_njan_10m5on[which(BA_njan_10m5on$freq == 35 &
-                           BA_njan_10m5on$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35, aes(
-      as.factor(windows_perint),
-      RMS_dB,
-      group = int,
-      colour = int
-    )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -45) + ggtitle(c_i) + theme(
-      legend.position = "none",
-      axis.title.y = element_blank(),
-      axis.title.x = element_blank()
-    )
-  plot_list_10m5on[[c_i]] = plot
-}
-
-
-tiff(
-  "10x5on.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_10m5on$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_10m5on$ID))  {
-  if (c == ceiling(length(unique(BA_njan_10m5on$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(
-    BA_njan_10m5on$ID
-  )) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_10m5on[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-
-### 5m5off
-
-BA_njan_5m5off <-
-  BA_njan_int[which(
-    BA_njan_int$freq == 35 &
-      BA_njan_int$stimulus == '2-Sinus-5x4ms' &
-      BA_njan_int$light == 'off'
-  ), ]
-unique(BA_njan_5m5off$ID)
-
-plot_list_5m5off = list()
-for (c_i in unique(BA_njan_5m5off$ID)) {
-  BA_njan_35 <-
-    BA_njan_5m5off[which(BA_njan_5m5off$freq == 35 &
-                           BA_njan_5m5off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35, aes(
-      as.factor(windows_perint),
-      RMS_dB,
-      group = int,
-      colour = int
-    )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -45) + ggtitle(c_i) + theme(
-      legend.position = "none",
-      axis.title.y = element_blank(),
-      axis.title.x = element_blank()
-    )
-  plot_list_5m5off[[c_i]] = plot
-}
-
-
-tiff(
-  "5m5off.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_5m5off$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_5m5off$ID))  {
-  if (c == ceiling(length(unique(BA_njan_5m5off$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(
-    BA_njan_5m5off$ID
-  )) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_5m5off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-
-
-### 20off
-
-BA_njan_20off <-
-  BA_njan_int[which(
-    BA_njan_int$freq == 35 &
-      BA_njan_int$stimulus == '1-Sinus-20ms' &
-      BA_njan_int$light == 'off'
-  ), ]
-unique(BA_njan_20off$ID)
-
-plot_list_20off = list()
-for (c_i in unique(BA_njan_20off$ID)) {
-  BA_njan_35 <-
-    BA_njan_20off[which(BA_njan_20off$freq == 35 &
-                          BA_njan_20off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35, aes(
-      as.factor(windows_perint),
-      RMS_dB,
-      group = int,
-      colour = int
-    )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -45) + ggtitle(c_i) + theme(
-      legend.position = "none",
-      axis.title.y = element_blank(),
-      axis.title.x = element_blank()
-    )
-  plot_list_20off[[c_i]] = plot
-}
-
-
-tiff(
-  "20off.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_20off$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_20off$ID))  {
-  if (c == ceiling(length(unique(BA_njan_20off$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(BA_njan_20off$ID)) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-
-
-
-
-
-continious_10m5off<- ggplot(BA_njan_10m5off, aes( as.factor(window),  RMS_dB,  group = ID,  colour = ID)) + 
-  geom_line(size = 1) +  
-  geom_vline(xintercept = seq(5,145,10)) +
-  ylim(-85, -45) + 
-  theme(
-    legend.position = "none",
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank()
-  )
-
-continious_10m5on<- ggplot(BA_njan_10m5on, aes( as.factor(window),  RMS_dB,  group = ID,  colour = ID)) + 
-  geom_line(size = 1) +  
-  geom_vline(xintercept = seq(5,145,10)) +
-  ylim(-85, -45) + 
-  theme(
-    legend.position = "none",
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank()
-  )
-
-continious_20off<- ggplot(BA_njan_20off, aes( as.factor(window),  RMS_dB,  group = ID,  colour = ID)) + 
-  geom_line(size = 1) +  
-  geom_vline(xintercept = seq(5,145,10)) +
-  ylim(-85, -45) + 
-  theme(
-    legend.position = "none",
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank()
-  )
-
-continious_5m5off<- ggplot(BA_njan_5m5off, aes( as.factor(window),  RMS_dB,  group = ID,  colour = ID)) + 
-  geom_line(size = 1) +  
-  geom_vline(xintercept = seq(5,145,10)) +
-  ylim(-85, -45) + 
-  theme(
-    legend.position = "none",
-    axis.title.y = element_blank(),
-    axis.title.x = element_blank()
-  )
-
-
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(4,1)))
-print(continious_5m5off, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
-print(continious_10m5off, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))
-print(continious_10m5on, vp = viewport(layout.pos.row = 3, layout.pos.col = 1))
-print(continious_20off, vp = viewport(layout.pos.row = 4, layout.pos.col = 1))
-
-########################################################################################################
 #### filtering out individuals that were not active at all (all values for all intensities below -80dB) + normalization around stimulus onset
 
 non_act_vec <- c()
@@ -532,7 +244,7 @@ act_vec <- c()
 for (cc in unique(BA_njan_int$ID)) {
   BA_njan_ID <-
     BA_njan_int[which(BA_njan_int$ID == cc & BA_njan_int$freq == 35), ]
-  if (all(BA_njan_ID$RMS_dB < -80)) {
+  if (all(BA_njan_ID$RMSdB < -80)) {
     non_act_vec <- c(non_act_vec, cc)
   } else {
     act_vec <- c(act_vec, cc)
@@ -555,7 +267,7 @@ BA_njan_act35_norm <- data.frame(
   light = character(),
   window = character(),
   RMS_lin = numeric(),
-  RMS_dB = numeric(),
+  RMSdB = numeric(),
   int = numeric(),
   window_perint = numeric(),
   stringsAsFactors = FALSE
@@ -597,11 +309,11 @@ for (id in 1:length(inds)) {
           as.numeric(BA_njan_onetrace$windows_perint)
         
         norm_vel <-
-          (BA_njan_onetrace$RMS_dB[which(BA_njan_onetrace$windows_perint == 5)] + BA_njan_onetrace$RMS_dB[which(BA_njan_onetrace$windows_perint == 6)]) /
+          (BA_njan_onetrace$RMSdB[which(BA_njan_onetrace$windows_perint == 5)] + BA_njan_onetrace$RMSdB[which(BA_njan_onetrace$windows_perint == 6)]) /
           2
         
-        BA_njan_onetrace$RMS_dB_norm <-
-          BA_njan_onetrace$RMS_dB - norm_vel
+        BA_njan_onetrace$RMSdB_norm <-
+          BA_njan_onetrace$RMSdB - norm_vel
         
         
         ### fill in table here
@@ -616,216 +328,7 @@ for (id in 1:length(inds)) {
 }
 
 
-### 10m5off - normalized around stimulus onset
 
-BA_njan_10m5off <-
-  BA_njan_act35_norm[which(BA_njan_act35_norm$stimulus == '2-Sinus-10x4ms' &
-                             BA_njan_act35_norm$light == 'off'), ]
-unique(BA_njan_10m5off$ID)
-
-plot_list_20off = list()
-for (c_i in unique(BA_njan_10m5off$ID)) {
-  BA_njan_35_IDnorm <-
-    BA_njan_10m5off[which(BA_njan_10m5off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35_IDnorm,
-           aes(
-             as.factor(windows_perint),
-             RMS_dB_norm,
-             group = int,
-             colour = int
-           )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-30, +30) + ggtitle(c_i) + theme(
-             legend.position = "none",
-             axis.title.y = element_blank(),
-             axis.title.x = element_blank()
-           )
-  plot_list_20off[[c_i]] = plot
-}
-
-tiff(
-  "10x5off_norm.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_10m5off$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_10m5off$ID))  {
-  if (c == ceiling(length(unique(BA_njan_10m5off$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(
-    BA_njan_10m5off$ID
-  )) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-
-### 10m5on - normalized around stimulus onset
-
-BA_njan_10m5on <-
-  BA_njan_act35_norm[which(BA_njan_act35_norm$stimulus == '2-Sinus-10x4ms' &
-                             BA_njan_act35_norm$light == 'on'), ]
-unique(BA_njan_10m5on$ID)
-
-plot_list_20off = list()
-for (c_i in unique(BA_njan_10m5on$ID)) {
-  BA_njan_35_IDnorm <-
-    BA_njan_10m5on[which(BA_njan_10m5on$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35_IDnorm,
-           aes(
-             as.factor(windows_perint),
-             RMS_dB_norm,
-             group = int,
-             colour = int
-           )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-30, +30) + ggtitle(c_i) + theme(
-             legend.position = "none",
-             axis.title.y = element_blank(),
-             axis.title.x = element_blank()
-           )
-  plot_list_20off[[c_i]] = plot
-}
-
-tiff(
-  "10x5on_norm.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_10m5on$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_10m5on$ID))  {
-  if (c == ceiling(length(unique(BA_njan_10m5on$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(
-    BA_njan_10m5on$ID
-  )) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-### 5m5off - normalized around stimulus onset
-
-BA_njan_5m5on <-
-  BA_njan_act35_norm[which(BA_njan_act35_norm$stimulus == '2-Sinus-5x4ms' &
-                             BA_njan_act35_norm$light == 'off'), ]
-unique(BA_njan_5m5on$ID)
-
-plot_list_20off = list()
-for (c_i in unique(BA_njan_5m5on$ID)) {
-  BA_njan_35_IDnorm <- BA_njan_5m5on[which(BA_njan_5m5on$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35_IDnorm,
-           aes(
-             as.factor(windows_perint),
-             RMS_dB_norm,
-             group = int,
-             colour = int
-           )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-30, +30) + ggtitle(c_i) + theme(
-             legend.position = "none",
-             axis.title.y = element_blank(),
-             axis.title.x = element_blank()
-           )
-  plot_list_20off[[c_i]] = plot
-}
-
-tiff(
-  "5x5off_norm.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_5m5on$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_5m5on$ID))  {
-  if (c == ceiling(length(unique(BA_njan_5m5on$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(BA_njan_5m5on$ID)) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
-
-### 20off - normalized around stimulus onset
-
-BA_njan_20off <-
-  BA_njan_act35_norm[which(BA_njan_act35_norm$stimulus == '1-Sinus-20ms' &
-                             BA_njan_act35_norm$light == 'off'), ]
-unique(BA_njan_20off$ID)
-
-plot_list_20off = list()
-for (c_i in unique(BA_njan_20off$ID)) {
-  BA_njan_35_IDnorm <- BA_njan_20off[which(BA_njan_20off$ID == c_i), ]
-  plot <-
-    ggplot(BA_njan_35_IDnorm,
-           aes(
-             as.factor(windows_perint),
-             RMS_dB_norm,
-             group = int,
-             colour = int
-           )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-30, +30) + ggtitle(c_i) + theme(
-             legend.position = "none",
-             axis.title.y = element_blank(),
-             axis.title.x = element_blank()
-           )
-  plot_list_20off[[c_i]] = plot
-}
-
-tiff(
-  "20off_norm.tiff",
-  width = 28,
-  height = 40,
-  units = 'cm',
-  res = 600
-)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(ceiling(length(
-  unique(BA_njan_20off$ID)
-) / 3), 3)))
-c <- 1
-k <- 1
-for (i in unique(BA_njan_20off$ID))  {
-  if (c == ceiling(length(unique(BA_njan_20off$ID)) / 3) + 1) {
-    k <- k + 1
-    c <- 1
-  } else if (c == (ceiling(length(unique(BA_njan_20off$ID)) / 3) * 2) + 1) {
-    k <- k + 1
-    c <- 1
-  }
-  print(plot_list_20off[[i]], vp = viewport(layout.pos.row = c, layout.pos.col = k))
-  c <- c + 1
-}
-dev.off()
 
 
 ########################################################################################################
@@ -841,14 +344,18 @@ BA_diff <- data.frame(
   freq = numeric(),
   light = character(),
   int = numeric(),
+  type_rea = logical(),
   dif56 = numeric(),
   dif57 = numeric(),
   dif67 = numeric(),
   dif68 = numeric(),
   var_bef = numeric(),
   var_aft = numeric(),
+  range_bef = numeric(),
+  range_aft = numeric(),
   mean_bef = numeric(),
   mean_aft = numeric(),
+  reac_cat = logical(),
   stringsAsFactors = FALSE
 )
 
@@ -883,28 +390,44 @@ for (id in 1:length(inds)) {
       
       for (d in 1:length(ints)) {
         int <- ints[d]
+        
         BA_njan_onetrace <-
           BA_njan_ind_stim_fre_li[which(BA_njan_ind_stim_fre_li$int == int), ]
         
+        type_rea <- BA_njan_onetrace$typ_res[1]
+        
         dif56 <-
-          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 6)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 5)]
+          BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 6)] - BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 5)]
         
         dif57 <-
-          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 5)]
+          BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 5)]
         
         dif67 <-
-          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 6)]
+          BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 7)] - BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 6)]
         
         dif68 <-
-          BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 8)] - BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint == 6)]
+          BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 8)] - BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint == 6)]
         
-        var_bef <- var(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        var_bef <- var(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
         
-        var_aft <- var(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+        var_aft <- var(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
         
-        mean_bef <- mean(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        range_bef <- max(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        - min(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
         
-        mean_aft <- mean(BA_njan_onetrace$RMS_dB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+        range_aft <- max(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)]) 
+        - min(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+        
+        mean_bef <- mean(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 1 & BA_njan_onetrace$windows_perint <= 5)])
+        
+        mean_aft <- mean(BA_njan_onetrace$RMSdB_norm[which(BA_njan_onetrace$windows_perint >= 6 & BA_njan_onetrace$windows_perint <= 10)])
+
+        
+        if (mean_aft >=1.75 && range_aft >= 1.5 && var_aft >= 1.75 && dif68 >= 2.5 && dif67 >= 2.5 && dif57 >= 1.5) {
+          reac_cat <- 1
+        } else {
+          reac_cat <- 0
+        } 
         
         ### fill in table here
         BA_diff[c, 1] <- as.character(ID)
@@ -912,14 +435,18 @@ for (id in 1:length(inds)) {
         BA_diff[c, 3] <- 35
         BA_diff[c, 4] <- as.character(light)
         BA_diff[c, 5] <- as.character(int)
-        BA_diff[c, 6] <- dif56
-        BA_diff[c, 7] <- dif57
-        BA_diff[c, 8] <- dif67
-        BA_diff[c, 9] <- dif68
-        BA_diff[c, 10] <- var_bef
-        BA_diff[c, 11] <- var_aft
-        BA_diff[c, 12] <- mean_bef
-        BA_diff[c, 13] <- mean_aft
+        BA_diff[c, 6]<- type_rea
+        BA_diff[c, 7] <- dif56
+        BA_diff[c, 8] <- dif57
+        BA_diff[c, 9] <- dif67
+        BA_diff[c, 10] <- dif68
+        BA_diff[c, 11] <- var_bef
+        BA_diff[c, 12] <- var_aft
+        BA_diff[c, 13] <- range_bef
+        BA_diff[c, 14] <- range_aft
+        BA_diff[c, 15] <- mean_bef
+        BA_diff[c, 16] <- mean_aft
+        BA_diff[c, 17] <- reac_cat
         
         c <- c + 1
         
@@ -929,29 +456,113 @@ for (id in 1:length(inds)) {
 }
 
 
+
+
 #### histogram differnces ####
 
+p_R <- ggplot(BA_diff, aes(type_rea)) + geom_histogram() + ggtitle ('# reaction')
+p_d56 <- ggplot(BA_diff, aes(dif56, fill = as.factor(type_rea))) + geom_histogram(binwidth = 0.5) + ggtitle ('# dif56') + 
+  theme(legend.title=element_blank(),legend.justification=c(1,1), legend.position=c(1,1), legend.text=element_text(size=5), legend.key.size = unit(0.3, "cm"))
+p_d57 <- ggplot(BA_diff, aes(dif57, fill = as.factor(type_rea))) + geom_histogram(binwidth = 0.5) + ggtitle ('# dif57') + 
+  theme(legend.title=element_blank(),legend.justification=c(1,1), legend.position=c(1,1), legend.text=element_text(size=5), legend.key.size = unit(0.3, "cm"))
+p_d67 <- ggplot(BA_diff, aes(dif67, fill = as.factor(type_rea))) + geom_histogram(binwidth = 0.5) + ggtitle ('# dif67') + 
+  theme(legend.title=element_blank(),legend.justification=c(1,1), legend.position=c(1,1), legend.text=element_text(size=5), legend.key.size = unit(0.3, "cm"))
+p_d68 <- ggplot(BA_diff, aes(dif68, fill = as.factor(type_rea))) + geom_histogram(binwidth = 0.5) + ggtitle ('# dif68') + 
+  theme(legend.title=element_blank(),legend.justification=c(1,1), legend.position=c(1,1), legend.text=element_text(size=5), legend.key.size = unit(0.3, "cm"))
 
-BA_njan_act35_example <- BA_njan_act35[which(BA_njan_act35$ID == "Njan_016"),]
+p_var_no <- ggplot(BA_diff[which(BA_diff$type_rea == 0),]) + geom_histogram(aes(var_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(var_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) +xlim (0,10) + ggtitle ('no reaction - variance')
 
-ggplot(BA_njan_act35_example, aes(x = windows_perint, y= RMS_dB, group = int, colour = int)) + geom_line() 
+p_var_yes <- ggplot(BA_diff[which(BA_diff$type_rea == 1),]) + geom_histogram(aes(var_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(var_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) +xlim (0,10) + ggtitle ('reaction - variance')
+
+p_range_no <- ggplot(BA_diff[which(BA_diff$type_rea == 0),]) + geom_histogram(aes(range_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(range_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) +xlim (-5,10) + ggtitle ('no reaction - range')
+
+p_range_yes <-ggplot(BA_diff[which(BA_diff$type_rea == 1),]) + geom_histogram(aes(range_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(range_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) +xlim (-5,10) + ggtitle ('reaction - range')
+
+p_mean_no <- ggplot(BA_diff[which(BA_diff$type_rea == 0),]) + geom_histogram(aes(mean_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(mean_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) + xlim (-10, 10) + ggtitle ('no reaction - mean')
+
+p_mean_yes <-ggplot(BA_diff[which(BA_diff$type_rea == 1),]) + geom_histogram(aes(mean_bef), fill = "red", alpha = 0.2,binwidth = 0.5) + 
+  geom_histogram(aes(mean_aft), fill = "blue", alpha = 0.2,binwidth = 0.5) + xlim (-10, 10) + ggtitle ('reaction - mean')
 
 
-BA_diff_example <- BA_diff[which(BA_diff$ID == "Njan_016"),]
+tiff("BA_splitting criteria.tiff",  width = 18,  height = 14,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(6, 12)))
+print(p_d56, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 1:3))
+print(p_d57, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 4:6))
+print(p_d67, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 7:9))
+print(p_d68, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 10:12))
+print(p_var_no, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 1:4))
+print(p_var_yes, vp = viewport(layout.pos.row = 5:6, layout.pos.col = 1:4))
+print(p_range_no, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 5:8))
+print(p_range_yes, vp = viewport(layout.pos.row = 5:6, layout.pos.col = 5:8))
+print(p_mean_no, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 9:12))
+print(p_mean_yes, vp = viewport(layout.pos.row = 5:6, layout.pos.col = 9:12))
+dev.off()
 
-ggplot (BA_diff_example, aes(dif56, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
-  geom_vline(xintercept=3) + ggtitle("dif56") 
 
-ggplot (BA_diff_example, aes(dif57, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
-  geom_vline(xintercept=3) + ggtitle("dif57")
+#### PCA for windows
 
-ggplot (BA_diff_example, aes(dif67, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
-  geom_vline(xintercept=3) + ggtitle("dif67")
+BA_njan_act35_norm_trans <- BA_njan_act35_norm %>% 
+  group_by(ID, stimulus, freq, light, int, windows_perint) %>% 
+  summarise(RMSdB=mean(RMSdB)) %>%
+  spread(windows_perint, RMSdB)
 
-ggplot (BA_diff_example, aes(dif68, colour=int)) + geom_histogram(binwidth = 0.05) + xlim(0,20) + 
-  geom_vline(xintercept=3) + ggtitle("dif68")
+# PCA
+pca_a <- princomp(BA_njan_act35_norm_trans[,-c(1:5)])
 
+# loadings for each PC
+act_load<-pca_a$loadings
 
+#importance of componants
+summary(pca_a)
+
+# plot: variance for first 4 PCs
+# Proportion
+PoV <- pca_a$sdev^2/sum(pca_a$sdev^2)
+# Percent
+PoV <- PoV *100
+x <- seq(1,20,1)
+pov_dat <- data.frame(cbind(PoV, x))
+pov_dat <- head(pov_dat, 4) 
+
+plot_PoV<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+  geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
+  labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#quick biplot PC1 vs PC2
+biplot(pca_a)
+
+#adding PC scores to dataset
+PCA_dat_act <- BA_njan_act35_norm_trans
+PCA_dat_act$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+PCA_dat_act$pc2 <- pca_a$scores[,2]
+PCA_dat_act$pc3 <- pca_a$scores[,3]
+PCA_dat_act$pc4 <- pca_a$scores[,4]
+PCA_dat_act$pc5 <- pca_a$scores[,5]
+
+# plot: biplot with colour-code for ID
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot_bi<-ggplot(PCA_dat_act, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+  theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
+  labs(x = "PC1 score", y = "PC2 score") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  scale_colour_manual(values=cbbPalette) +
+  theme(legend.position = "none")
+
+# plotting pc2 values against ID
+ggplot(PCA_dat_act, aes(x= ID, y = pc1, colour = ID)) + geom_jitter()
+ggplot(PCA_dat_act, aes(x= ID, y = pc2, colour = ID)) + geom_jitter()
+
+ggplot(PCA_dat_act, aes(x= , y = pc2, colour = ID)) + geom_jitter()
 
 
 
@@ -961,7 +572,7 @@ BA_njan_35_1 <-
 plot1 <-
   ggplot(BA_njan_35_1, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_089') + theme(legend.position =
@@ -974,7 +585,7 @@ BA_njan_35_2 <-
 plot2 <-
   ggplot(BA_njan_35_2, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_088') + theme(legend.position =
@@ -987,7 +598,7 @@ BA_njan_35_3 <-
 plot3 <-
   ggplot(BA_njan_35_3, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_087') + theme(legend.position =
@@ -1000,7 +611,7 @@ BA_njan_35_4 <-
 plot4 <-
   ggplot(BA_njan_35_4, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_039') + theme(legend.position =
@@ -1013,7 +624,7 @@ BA_njan_35_5 <-
 plot5 <-
   ggplot(BA_njan_35_5, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_037') + theme(legend.position =
@@ -1026,7 +637,7 @@ BA_njan_35_6 <-
 plot6 <-
   ggplot(BA_njan_35_6, aes(
     as.factor(windows_perint),
-    RMS_dB,
+    RMSdB,
     group = int,
     colour = int
   )) + geom_line(size = 1.5) + scale_colour_manual(values = c  (marker$color)) + ylim(-85, -50) + ggtitle('Njan_016') + theme(legend.position =
@@ -1060,7 +671,7 @@ BA_njan_int
 
 ggplot(BA_njan_int, aes(
   as.factor(windows_perint),
-  RMS_dB,
+  RMSdB,
   group = int,
   colour = int
 )) + geom_line() + scale_colour_manual(values = c(marker$color)) + ylim(-85, -50) + facet_grid(. ~ ID)
@@ -1069,7 +680,7 @@ BA_njan_int_1 <- BA_njan_int[1:93755, ]
 
 ggplot(BA_njan_int_1, aes(
   as.factor(windows_perint),
-  RMS_dB,
+  RMSdB,
   group = int,
   colour = int
 )) + geom_line() + scale_colour_manual(values = c(marker$color)) + ylim(-85, -50) + facet_grid(. ~ ID)
@@ -1078,7 +689,7 @@ BA_njan_int_10 <- BA_njan_int[1:20795, ]
 
 ggplot(BA_njan_int_10, aes(
   as.factor(windows_perint),
-  RMS_dB,
+  RMSdB,
   group = int,
   colour = int
 )) + geom_line() + scale_colour_manual(values = c(marker$color)) + ylim(-85, -50) + facet_grid(. ~ ID)
@@ -1144,12 +755,12 @@ for (id in 1:length(inds)) {
           BA_njan_onetrace$windows_perint <-
             as.numeric(BA_njan_onetrace$windows_perint)
           FS_pre <-
-            mean(BA_njan_onetrace$RMS_dB[which(
+            mean(BA_njan_onetrace$RMSdB[which(
               BA_njan_onetrace$windows_perint >= 1 &
                 BA_njan_onetrace$windows_perint <= 4
             )])
           FS_post <-
-            mean(BA_njan_onetrace$RMS_dB[which(
+            mean(BA_njan_onetrace$RMSdB[which(
               BA_njan_onetrace$windows_perint >= 7 &
                 BA_njan_onetrace$windows_perint <= 10
             )])
