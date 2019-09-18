@@ -134,13 +134,16 @@ SS_all <- read.table("IDs_Njan_allSS.csv", header = T)
 SS_act <- read.table("IDs_Njan_actSS.csv", header = T)
 SS_non <- read.table("IDs_Njan_nonSS.csv", header = T)
 
+# all individuals that where active during SS
 BA_njan_act_SSall <-BA_njan_act[BA_njan_act$ID %in% SS_all$ID, ] 
 
+# all with light off
 BA_njan_act_SSall_lightoff <- BA_njan_act_SSall[which(BA_njan_act_SSall$light == 'off'),]
 length(unique(BA_njan_act_SSall_lightoff$ID))
 #summary(BA_njan_act_SSall_lightoff$stimulus)/(160*18)
 #summary(BA_njan_act_SSall_lightoff)
 
+# all for 10x4 stimulus
 BA_njan_act_SSall_lightoff_10x4  <- BA_njan_act_SSall_lightoff[which(BA_njan_act_SSall_lightoff$stimulus == '2-Sinus-10x4ms'),]
 length(unique(BA_njan_act_SSall_lightoff_10x4$ID))
 
@@ -161,27 +164,25 @@ length(unique(BA_njan_act_SSnon$ID))
 ####################################################################################################################################################
 # temp
 
+######### 10 bins ################
 
-## selcet for the overlapping inds of 35Khz and FIRST
+## selcet for the overlapping inds of 35Khz and FIRST (edit:second try with limited bin numbers --> what is left now: 5-10)
 BA_njan_act_SSall_lightoff_10x4_35Khz <- BA_njan_act_SSall_lightoff_10x4_35Khz[which(BA_njan_act_SSall_lightoff_10x4_35Khz$int != 'sil' & BA_njan_act_SSall_lightoff_10x4_35Khz$int != 'NA'),]
-BA_njan_act_SSall_lightoff_10x4_FIRST <- BA_njan_act_SSall_lightoff_10x4_FIRST[which(BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'sil' & BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'NA'),]
 
-BA_njan_act_SSall_lightoff_10x4_35Khz <- BA_njan_act_SSall_lightoff_10x4_35Khz[BA_njan_act_SSall_lightoff_10x4_35Khz$ID %in% BA_njan_act_SSall_lightoff_10x4_FIRST$ID, ]
-BA_njan_act_SSall_lightoff_10x4_FIRST <- BA_njan_act_SSall_lightoff_10x4_FIRST[BA_njan_act_SSall_lightoff_10x4_FIRST$ID %in% BA_njan_act_SSall_lightoff_10x4_35Khz$ID, ]
+BA_njan_act_SSall_lightoff_10x4_35Khz_10 <- BA_njan_act_SSall_lightoff_10x4_35Khz[BA_njan_act_SSall_lightoff_10x4_35Khz$ID %in% BA_njan_act_SSall_lightoff_10x4_FIRST$ID, ]
 
 
 ## 35 Khz
 
+ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_10, aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
 
-ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
-
-BA_NASSL1035_trans <- BA_njan_act_SSall_lightoff_10x4_35Khz %>% 
-  group_by(ID, stimulus, freq, light, int, windows_perint) %>% 
+BA_NASSL1035_trans <- BA_njan_act_SSall_lightoff_10x4_35Khz_10 %>% 
+  group_by(ID, stimulus, freq, light, order, int, windows_perint) %>% 
   summarise(RMSdB=mean(RMSdB)) %>%
   spread(windows_perint, RMSdB)
 
 # PCA
-pca_a <- princomp(BA_NASSL1035_trans[,-c(1:5)])
+pca_a <- princomp(BA_NASSL1035_trans[,-c(1:6)])
 
 # loadings for each PC
 act_load<-pca_a$loadings
@@ -193,7 +194,7 @@ c3 <-act_load[21:30]
 
 loa_dat <-data.frame(cbind(no, c1,c2,c3))
 
-plot_loadings_35 <-ggplot(loa_dat) + 
+plot_loadings_35_10 <-ggplot(loa_dat) + 
   geom_line(aes(x=no, y=c1), colour = 'dimgrey', size =2) + geom_point(aes(x=no, y=c1)) +
   geom_line(aes(x=no, y=c2), colour = 'deepskyblue4', size =2) + geom_point(aes(x=no, y=c2)) +
   geom_line(aes(x=no, y=c3), colour = 'deepskyblue1', size =2) + geom_point(aes(x=no, y=c3)) +
@@ -216,7 +217,7 @@ x <- seq(1,20,1)
 pov_dat <- data.frame(cbind(PoV, x))
 pov_dat <- head(pov_dat, 4) 
 
-plot_PoV_35<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+plot_PoV_35_10<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
   geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
   labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
@@ -226,17 +227,17 @@ plot_PoV_35<-ggplot(pov_dat, aes(y=PoV, x=x)) +
 biplot(pca_a)
 
 #adding PC scores to dataset
-BA_njan_act_SSall_lightoff_10x4_35Khz <- BA_NASSL1035_trans
-BA_njan_act_SSall_lightoff_10x4_35Khz$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
-BA_njan_act_SSall_lightoff_10x4_35Khz$pc2 <- pca_a$scores[,2]
-BA_njan_act_SSall_lightoff_10x4_35Khz$pc3 <- pca_a$scores[,3]
-BA_njan_act_SSall_lightoff_10x4_35Khz$pc4 <- pca_a$scores[,4]
-BA_njan_act_SSall_lightoff_10x4_35Khz$pc5 <- pca_a$scores[,5]
+BA_njan_act_SSall_lightoff_10x4_35Khz_10 <- BA_NASSL1035_trans
+BA_njan_act_SSall_lightoff_10x4_35Khz_10$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+BA_njan_act_SSall_lightoff_10x4_35Khz_10$pc2 <- pca_a$scores[,2]
+BA_njan_act_SSall_lightoff_10x4_35Khz_10$pc3 <- pca_a$scores[,3]
+BA_njan_act_SSall_lightoff_10x4_35Khz_10$pc4 <- pca_a$scores[,4]
+BA_njan_act_SSall_lightoff_10x4_35Khz_10$pc5 <- pca_a$scores[,5]
 
 # plot: biplot with colour-code for ID
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_10, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
   theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
   labs(x = "PC1 score", y = "PC2 score") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
@@ -245,13 +246,13 @@ plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x=pc1, y=pc2, colour=
   theme(legend.position = "none")
 
 # plotting pc2 values against ID
-freq35_pc1 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+freq35_pc1_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_10, aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
   theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('flight strength') + 
   theme(plot.title = element_text(colour = 'dimgrey'))
-freq35_pc2 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+freq35_pc2_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_10, aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
   theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('type of reaction') + 
   theme(plot.title = element_text(colour = 'deepskyblue4'))
-freq35_pc3 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+freq35_pc3_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_10, aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
   theme(legend.position="none",axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('short term reaction') + 
   theme(plot.title = element_text(colour = 'deepskyblue1'))
 
@@ -261,16 +262,17 @@ freq35_pc3 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz, aes(x= ID, y = pc3, 
 
 
 BA_njan_act_SSall_lightoff_10x4_FIRST <- BA_njan_act_SSall_lightoff_10x4_FIRST[which(BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'sil' & BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'NA'),]
+BA_njan_act_SSall_lightoff_10x4_FIRST_10 <- BA_njan_act_SSall_lightoff_10x4_FIRST[BA_njan_act_SSall_lightoff_10x4_FIRST$ID %in% BA_njan_act_SSall_lightoff_10x4_35Khz$ID, ]
 
-ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
+ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_10, aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
 
-BA_NASSL10FIRST_trans <- BA_njan_act_SSall_lightoff_10x4_FIRST %>% 
-  group_by(ID, stimulus, freq, light, int, windows_perint) %>% 
+BA_NASSL10FIRST_trans <- BA_njan_act_SSall_lightoff_10x4_FIRST_10 %>% 
+  group_by(ID, stimulus, freq, light, order, int, windows_perint) %>% 
   summarise(RMSdB=mean(RMSdB)) %>%
   spread(windows_perint, RMSdB)
 
 # PCA
-pca_a <- princomp(BA_NASSL10FIRST_trans[,-c(1:5)])
+pca_a <- princomp(BA_NASSL10FIRST_trans[,-c(1:6)])
 
 # loadings for each PC
 act_load<-pca_a$loadings
@@ -282,7 +284,7 @@ c3 <-act_load[21:30]
 
 loa_dat <-data.frame(cbind(no, c1,c2,c3))
 
-plot_loadings_FIRST <-ggplot(loa_dat) + 
+plot_loadings_FIRST_10 <-ggplot(loa_dat) + 
   geom_line(aes(x=no, y=c1), colour = 'dimgrey', size =2) + geom_point(aes(x=no, y=c1)) +
   geom_line(aes(x=no, y=c2), colour = 'deepskyblue4', size =2) + geom_point(aes(x=no, y=c2)) +
   geom_line(aes(x=no, y=c3), colour = 'deepskyblue1', size =2) + geom_point(aes(x=no, y=c3)) +
@@ -301,7 +303,7 @@ x <- seq(1,20,1)
 pov_dat <- data.frame(cbind(PoV, x))
 pov_dat <- head(pov_dat, 4) 
 
-plot_PoV_FIRST<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+plot_PoV_FIRST_10<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
   geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
   labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
@@ -311,17 +313,17 @@ plot_PoV_FIRST<-ggplot(pov_dat, aes(y=PoV, x=x)) +
 biplot(pca_a)
 
 #adding PC scores to dataset
-BA_njan_act_SSall_lightoff_10x4_FIRST <- BA_NASSL10FIRST_trans
-BA_njan_act_SSall_lightoff_10x4_FIRST$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
-BA_njan_act_SSall_lightoff_10x4_FIRST$pc2 <- pca_a$scores[,2]
-BA_njan_act_SSall_lightoff_10x4_FIRST$pc3 <- pca_a$scores[,3]
-BA_njan_act_SSall_lightoff_10x4_FIRST$pc4 <- pca_a$scores[,4]
-BA_njan_act_SSall_lightoff_10x4_FIRST$pc5 <- pca_a$scores[,5]
+BA_njan_act_SSall_lightoff_10x4_FIRST_10 <- BA_NASSL10FIRST_trans
+BA_njan_act_SSall_lightoff_10x4_FIRST_10$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+BA_njan_act_SSall_lightoff_10x4_FIRST_10$pc2 <- pca_a$scores[,2]
+BA_njan_act_SSall_lightoff_10x4_FIRST_10$pc3 <- pca_a$scores[,3]
+BA_njan_act_SSall_lightoff_10x4_FIRST_10$pc4 <- pca_a$scores[,4]
+BA_njan_act_SSall_lightoff_10x4_FIRST_10$pc5 <- pca_a$scores[,5]
 
 # plot: biplot with colour-code for ID
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_10, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
   theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
   labs(x = "PC1 score", y = "PC2 score") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
@@ -330,33 +332,385 @@ plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x=pc1, y=pc2, colour=
   theme(legend.position = "none")
 
 # plotting pc2 values against ID
-FIRST_pc1 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+FIRST_pc1_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_10, aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
   theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('flight strength') + 
   theme(plot.title = element_text(colour = 'dimgrey'))
-FIRST_pc2 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+FIRST_pc2_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_10, aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
   theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('type of reaction') + 
   theme(plot.title = element_text(colour = 'deepskyblue4'))
-FIRST_pc3 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST, aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+FIRST_pc3_10 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_10, aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
   theme(legend.position="none",axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('short term reaction') + 
   theme(plot.title = element_text(colour = 'deepskyblue1'))
 
 
 ## adapt
-tiff("BA_PCAforsubsets.tiff",  width = 35,  height = 23,  units = 'cm',  res = 600)
+tiff("BA_PCAforsubsets_10.tiff",  width = 35,  height = 23,  units = 'cm',  res = 600)
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(4, 4)))
-print(freq35_pc1, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 1))
-print(freq35_pc2, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 2))
-print(freq35_pc3, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 3))
-print(plot_loadings_35, vp = viewport(layout.pos.row = 1, layout.pos.col = 4))
-print(plot_PoV_35, vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
-print(FIRST_pc1, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 1))
-print(FIRST_pc2, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 2))
-print(FIRST_pc3, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 3))
-print(plot_loadings_FIRST, vp = viewport(layout.pos.row = 3, layout.pos.col = 4))
-print(plot_PoV_FIRST, vp = viewport(layout.pos.row = 4, layout.pos.col = 4))
+print(freq35_pc1_10, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 1))
+print(freq35_pc2_10, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 2))
+print(freq35_pc3_10, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 3))
+print(plot_loadings_35_10, vp = viewport(layout.pos.row = 1, layout.pos.col = 4))
+print(plot_PoV_35_10, vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+print(FIRST_pc1_10, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 1))
+print(FIRST_pc2_10, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 2))
+print(FIRST_pc3_10, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 3))
+print(plot_loadings_FIRST_10, vp = viewport(layout.pos.row = 3, layout.pos.col = 4))
+print(plot_PoV_FIRST_10, vp = viewport(layout.pos.row = 4, layout.pos.col = 4))
 dev.off()
 
+
+############## 6 bins ################
+
+## selcet for the overlapping inds of 35Khz and FIRST (edit:second try with limited bin numbers --> what is left now: 5-10)
+BA_njan_act_SSall_lightoff_10x4_35Khz <- BA_njan_act_SSall_lightoff_10x4_35Khz[which(BA_njan_act_SSall_lightoff_10x4_35Khz$int != 'sil' & BA_njan_act_SSall_lightoff_10x4_35Khz$int != 'NA'& BA_njan_act_SSall_lightoff_10x4_35Khz$windows_perint != '1'& BA_njan_act_SSall_lightoff_10x4_35Khz$windows_perint != '2'& BA_njan_act_SSall_lightoff_10x4_35Khz$windows_perint != '3'& BA_njan_act_SSall_lightoff_10x4_35Khz$windows_perint != '4'),]
+
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 <- BA_njan_act_SSall_lightoff_10x4_35Khz[BA_njan_act_SSall_lightoff_10x4_35Khz$ID %in% BA_njan_act_SSall_lightoff_10x4_FIRST$ID, ]
+
+
+## 35 Khz
+
+ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_6 , aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
+
+BA_NASSL1035_trans <- BA_njan_act_SSall_lightoff_10x4_35Khz_6  %>% 
+  group_by(ID, stimulus, freq, light, order, int, windows_perint) %>% 
+  summarise(RMSdB=mean(RMSdB)) %>%
+  spread(windows_perint, RMSdB)
+
+# PCA
+pca_a <- princomp(BA_NASSL1035_trans[,-c(1:6)])
+
+# loadings for each PC
+act_load<-pca_a$loadings
+
+no <- seq(5,10,1)
+c1 <- act_load[1:6]
+c2 <-act_load[7:12]
+c3 <-act_load[13:18]
+
+loa_dat <-data.frame(cbind(no, c1,c2,c3))
+
+plot_loadings_35_6 <-ggplot(loa_dat) + 
+  geom_line(aes(x=no, y=c1), colour = 'dimgrey', size =2) + geom_point(aes(x=no, y=c1)) +
+  geom_line(aes(x=no, y=c2), colour = 'deepskyblue4', size =2) + geom_point(aes(x=no, y=c2)) +
+  geom_line(aes(x=no, y=c3), colour = 'deepskyblue1', size =2) + geom_point(aes(x=no, y=c3)) +
+  ggtitle ('loadings')
+
+
+
+
+
+
+#importance of componants
+summary(pca_a)
+
+# plot: variance for first 4 PCs
+# Proportion
+PoV <- pca_a$sdev^2/sum(pca_a$sdev^2)
+# Percent
+PoV <- PoV *100
+x <- seq(1,20,1)
+pov_dat <- data.frame(cbind(PoV, x))
+pov_dat <- head(pov_dat, 4) 
+
+plot_PoV_35_6<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+  geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
+  labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#quick biplot PC1 vs PC2
+biplot(pca_a)
+
+#adding PC scores to dataset
+BA_njan_act_SSall_lightoff_10x4_35Khz_6  <- BA_NASSL1035_trans
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 $pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 $pc2 <- pca_a$scores[,2]
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 $pc3 <- pca_a$scores[,3]
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 $pc4 <- pca_a$scores[,4]
+BA_njan_act_SSall_lightoff_10x4_35Khz_6 $pc5 <- pca_a$scores[,5]
+
+# plot: biplot with colour-code for ID
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_6 , aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+  theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
+  labs(x = "PC1 score", y = "PC2 score") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  scale_colour_manual(values=cbbPalette) +
+  theme(legend.position = "none")
+
+# plotting pc2 values against ID
+freq35_pc1_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_6 , aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('flight strength') + 
+  theme(plot.title = element_text(colour = 'dimgrey'))
+freq35_pc2_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_6 , aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+  theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('type of reaction') + 
+  theme(plot.title = element_text(colour = 'deepskyblue4'))
+freq35_pc3_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_35Khz_6 , aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+  theme(legend.position="none",axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('short term reaction') + 
+  theme(plot.title = element_text(colour = 'deepskyblue1'))
+
+
+
+## FIRST 
+
+BA_njan_act_SSall_lightoff_10x4_FIRST <- BA_njan_act_SSall_lightoff_10x4_FIRST[which(BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'sil' & BA_njan_act_SSall_lightoff_10x4_FIRST$int != 'NA'& BA_njan_act_SSall_lightoff_10x4_FIRST$windows_perint != '1'& BA_njan_act_SSall_lightoff_10x4_FIRST$windows_perint != '2'& BA_njan_act_SSall_lightoff_10x4_FIRST$windows_perint != '3'& BA_njan_act_SSall_lightoff_10x4_FIRST$windows_perint != '4'),]
+BA_njan_act_SSall_lightoff_10x4_FIRST_6 <- BA_njan_act_SSall_lightoff_10x4_FIRST[BA_njan_act_SSall_lightoff_10x4_FIRST$ID %in% BA_njan_act_SSall_lightoff_10x4_35Khz$ID, ]
+
+
+ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_6, aes(x=as.factor(windows_perint), y=RMSdB, group = interaction(ID, int), colour = ID)) + geom_line()
+
+BA_NASSL10FIRST_trans <- BA_njan_act_SSall_lightoff_10x4_FIRST_6 %>% 
+  group_by(ID, stimulus, freq, light, int, order,  windows_perint) %>% 
+  summarise(RMSdB=mean(RMSdB)) %>%
+  spread(windows_perint, RMSdB)
+
+# PCA
+pca_a <- princomp(BA_NASSL10FIRST_trans[,-c(1:6)])
+
+# loadings for each PC
+act_load<-pca_a$loadings
+
+no <- seq(5,10,1)
+c1 <- act_load[1:6]
+c2 <-act_load[7:12]
+c3 <-act_load[13:18]
+
+loa_dat <-data.frame(cbind(no, c1,c2,c3))
+
+plot_loadings_FIRST_6 <-ggplot(loa_dat) + 
+  geom_line(aes(x=no, y=c1), colour = 'dimgrey', size =2) + geom_point(aes(x=no, y=c1)) +
+  geom_line(aes(x=no, y=c2), colour = 'deepskyblue4', size =2) + geom_point(aes(x=no, y=c2)) +
+  geom_line(aes(x=no, y=c3), colour = 'deepskyblue1', size =2) + geom_point(aes(x=no, y=c3)) +
+  ggtitle ('loadings')
+
+
+#importance of componants
+summary(pca_a)
+
+# plot: variance for first 4 PCs
+# Proportion
+PoV <- pca_a$sdev^2/sum(pca_a$sdev^2)
+# Percent
+PoV <- PoV *100
+x <- seq(1,20,1)
+pov_dat <- data.frame(cbind(PoV, x))
+pov_dat <- head(pov_dat, 4) 
+
+plot_PoV_FIRST_6<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+  geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
+  labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#quick biplot PC1 vs PC2
+biplot(pca_a)
+
+#adding PC scores to dataset
+BA_njan_act_SSall_lightoff_10x4_FIRST_6 <- BA_NASSL10FIRST_trans
+BA_njan_act_SSall_lightoff_10x4_FIRST_6$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+BA_njan_act_SSall_lightoff_10x4_FIRST_6$pc2 <- pca_a$scores[,2]
+BA_njan_act_SSall_lightoff_10x4_FIRST_6$pc3 <- pca_a$scores[,3]
+BA_njan_act_SSall_lightoff_10x4_FIRST_6$pc4 <- pca_a$scores[,4]
+BA_njan_act_SSall_lightoff_10x4_FIRST_6$pc5 <- pca_a$scores[,5]
+
+# plot: biplot with colour-code for ID
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_6, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+  theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
+  labs(x = "PC1 score", y = "PC2 score") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  scale_colour_manual(values=cbbPalette) +
+  theme(legend.position = "none")
+
+# plotting pc2 values against ID
+FIRST_pc1_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_6, aes(x= ID, y = pc1, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3, outlier.shape = NA) +
+  theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('flight strength') + 
+  theme(plot.title = element_text(colour = 'dimgrey'))
+FIRST_pc2_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_6, aes(x= ID, y = pc2, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+  theme(legend.position="none", axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('type of reaction') + 
+  theme(plot.title = element_text(colour = 'deepskyblue4'))
+FIRST_pc3_6 <- ggplot(BA_njan_act_SSall_lightoff_10x4_FIRST_6, aes(x= ID, y = pc3, colour = ID)) + geom_jitter() + geom_boxplot(alpha = 0.3,outlier.shape = NA) +
+  theme(legend.position="none",axis.text.x = element_text(angle = 60, hjust = 1)) + ggtitle ('short term reaction') + 
+  theme(plot.title = element_text(colour = 'deepskyblue1'))
+
+
+## adapt
+tiff("BA_PCAforsubsets_6.tiff",  width = 35,  height = 23,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(4, 4)))
+print(freq35_pc1_6, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 1))
+print(freq35_pc2_6, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 2))
+print(freq35_pc3_6, vp = viewport(layout.pos.row = 1:2, layout.pos.col = 3))
+print(plot_loadings_35_6, vp = viewport(layout.pos.row = 1, layout.pos.col = 4))
+print(plot_PoV_35_6, vp = viewport(layout.pos.row = 2, layout.pos.col = 4))
+print(FIRST_pc1_6, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 1))
+print(FIRST_pc2_6, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 2))
+print(FIRST_pc3_6, vp = viewport(layout.pos.row = 3:4, layout.pos.col = 3))
+print(plot_loadings_FIRST_6, vp = viewport(layout.pos.row = 3, layout.pos.col = 4))
+print(plot_PoV_FIRST_6, vp = viewport(layout.pos.row = 4, layout.pos.col = 4))
+dev.off()
+
+
+
+
+
+BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc <- BA_njan_act_SSall_lightoff_10x4_FIRST_6[which(BA_njan_act_SSall_lightoff_10x4_FIRST_6$ID == 'Njan_037'),]
+
+plot_list_pcexamp = list()
+for (c_i in unique(BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc$int)) {
+  temp<-BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc[which(BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc$int == c_i),]
+  a <-temp[6:11]
+  b <-seq(1,6,1)
+  temp_dat <- data.frame(cbind(t(a), b))
+  plot <- ggplot(temp_dat, aes(x = b, y=V1)) + geom_line() + geom_text(x=1.3, y=-72, label=toString(round(temp$pc3, digits =2)), size =3) + ylab(c_i) +
+    theme(axis.title.x=element_blank(),axis.text.x=element_blank()) + ylim (-78,-50)
+  plot_list_pcexamp[[c_i]] = plot
+}
+
+
+
+tiff( "pc3_examples_Njan037_FIRST_6.tiff",  width = 8,  height = 20,  units = 'cm',  res = 600)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(length(unique(BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc$int)), 1)))
+c <- 1
+for (i in unique(BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc$int))  {
+  print(plot_list_pcexamp[[i]],
+        vp = viewport(layout.pos.row = c, layout.pos.col = 1))
+  c <- c + 1
+}
+dev.off()
+
+
+temp<-BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc[which(BA_njan_act_SSall_lightoff_10x4_FIRST_examp_pc$int == '90dB'),]
+a <-temp[6:15]
+b <-seq(1,10,1)
+temp_dat <- data.frame(cbind(t(a), b))
+
+ex_3_midhpc2 <- ggplot(temp_dat, aes(x = b, y=V1)) + geom_line()
+
+
+temp_dat$b
+
+# histogram of the freqs covered in FIRST dataset
+ggplot (BA_njan_act_SSall_lightoff_10x4_FIRST, aes(freq)) + geom_histogram(binwidth = 5)
+
+
+
+
+##### PCA with all freq
+BA_njan_act_SSall_lightoff_10x4
+
+BA_njan_act_SSall_lightoff_10x4 <- BA_njan_act_SSall_lightoff_10x4[which(BA_njan_act_SSall_lightoff_10x4$int != 'sil' & BA_njan_act_SSall_lightoff_10x4$int != 'NA'),]
+
+for (ii in 1:(dim(BA_njan_act_SSall_lightoff_10x4)[1])) {
+  BA_njan_act_SSall_lightoff_10x4$int_num[ii] <- as.numeric(strsplit(as.character(BA_njan_act_SSall_lightoff_10x4$int[ii]), "dB"))
+}
+
+BA_ALL_trans <- BA_njan_act_SSall_lightoff_10x4 %>% 
+  group_by(ID, light, stimulus, freq, int_num, order,  windows_perint) %>% 
+  summarise(RMSdB=mean(RMSdB)) %>%
+  spread(windows_perint, RMSdB)
+
+# PCA
+pca_a <- princomp(BA_ALL_trans[,-c(1:6)])
+
+# loadings for each PC
+act_load<-pca_a$loadings
+
+no <- seq(1,10,1)
+c1 <- act_load[1:10]
+c2 <-act_load[11:20]
+c3 <-act_load[21:30]
+
+loa_dat <-data.frame(cbind(no, c1,c2,c3))
+
+plot_loadings_ALL_10 <-ggplot(loa_dat) + 
+  geom_line(aes(x=no, y=c1), colour = 'dimgrey', size =2) + geom_point(aes(x=no, y=c1)) +
+  geom_line(aes(x=no, y=c2), colour = 'deepskyblue4', size =2) + geom_point(aes(x=no, y=c2)) +
+  geom_line(aes(x=no, y=c3), colour = 'deepskyblue1', size =2) + geom_point(aes(x=no, y=c3)) +
+  ggtitle ('loadings')
+
+
+#importance of componants
+summary(pca_a)
+
+# plot: variance for first 4 PCs
+# Proportion
+PoV <- pca_a$sdev^2/sum(pca_a$sdev^2)
+# Percent
+PoV <- PoV *100
+x <- seq(1,20,1)
+pov_dat <- data.frame(cbind(PoV, x))
+pov_dat <- head(pov_dat, 4) 
+
+plot_PoV_ALL_10<-ggplot(pov_dat, aes(y=PoV, x=x)) + 
+  geom_point() + theme( axis.text=element_text(size=8), axis.title=element_text(size=9)) + 
+  labs(x = "Principle Components ", y = "Percentage of variance (%)") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+#quick biplot PC1 vs PC2
+biplot(pca_a)
+
+#adding PC scores to dataset
+BA_njan_act_SSall_lightoff_10x4 <- BA_ALL_trans
+BA_njan_act_SSall_lightoff_10x4$pc1 <- pca_a$scores[,1]# change sign of PC1 scores for better visualistion 
+BA_njan_act_SSall_lightoff_10x4$pc2 <- pca_a$scores[,2]
+BA_njan_act_SSall_lightoff_10x4$pc3 <- pca_a$scores[,3]
+BA_njan_act_SSall_lightoff_10x4$pc4 <- pca_a$scores[,4]
+BA_njan_act_SSall_lightoff_10x4$pc5 <- pca_a$scores[,5]
+
+# plot: biplot with colour-code for ID
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+plot_bi<-ggplot(BA_njan_act_SSall_lightoff_10x4, aes(x=pc1, y=pc2, colour=ID)) + geom_point(aes(group=ID)) + 
+  theme( axis.text=element_text(size=8),axis.title=element_text(size=9)) + 
+  labs(x = "PC1 score", y = "PC2 score") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), 
+        axis.line = element_line(colour = "black")) +
+  scale_colour_manual(values=cbbPalette) +
+  theme(legend.position = "none")
+
+
+
+################# attempt of doing stats ##################
+
+library(lme4)
+
+
+BA_njan_act_SSall_lightoff_10x4_FIRST_6
+BA_njan_act_SSall_lightoff_10x4_35Khz_6
+BA_njan_act_SSall_lightoff_10x4_FIRST_10
+BA_njan_act_SSall_lightoff_10x4_35Khz_10
+
+summary(BA_njan_act_SSall_lightoff_10x4)
+
+
+# making sure freq is treated as a number
+BA_njan_act_SSall_lightoff_10x4$freq <- as.numeric(BA_njan_act_SSall_lightoff_10x4$freq)
+
+ggplot (BA_njan_act_SSall_lightoff_10x4, aes (x=pc2)) + geom_histogram()
+
+mt1 <- lmer(pc2 ~ freq + int_num + order + freq:int_num + freq:order + (1|ID), data= BA_njan_act_SSall_lightoff_10x4)
+summary(mt1)
+
+mt2 <- lmer(pc2 ~ freq + int_num + order + freq:int_num + (1|ID), data= BA_njan_act_SSall_lightoff_10x4)
+summary(mt2)
+
+mt3 <- lmer(pc2 ~ freq + int_num + order  + (1|ID), data= BA_njan_act_SSall_lightoff_10x4)
+summary(mt3)
+
+
+mt2 <- lmer(pc2 ~ int + order + (1|ID), data= BA_njan_act_SSall_lightoff_10x4)
+summary(mt2)
+
+mt2 <- lmer(pc2 ~ int + order + (1|ID), data= BA_njan_act_SSall_lightoff_10x4)
+summary(mt2)
 
 
 ## ALL 10x4 light off
@@ -621,8 +975,7 @@ marker = list(color = colorRampPalette(brewer.pal(9, "Blues"))(16))
 
 
 BA_njan_35 <-
-  BA_njan_int[which(BA_njan_int$freq == 35 &
-                      BA_njan_int$ID == 'Njan_001' & BA_njan_int$int == '70dB'), ]
+  BA_njan_int[which(BA_njan_int$freq == 35), ]
 BA_njan_35 <- BA_njan_35[!BA_njan_35$int %in% c('sil', 'NA'), ]
 
 ggplot(BA_njan_35, aes(
@@ -633,6 +986,23 @@ ggplot(BA_njan_35, aes(
 
 
 summary(BA_njan_int)
+
+
+non_act_vec_35 <- c()
+act_vec_35 <- c()
+
+for (cc in unique(BA_njan_35$ID)) {
+  BA_njan_ID <-
+    BA_njan_35[which(BA_njan_35$ID == cc), ]
+  if (all(BA_njan_ID$RMSdB < -80)) {
+    non_act_vec_35 <- c(non_act_vec_35, cc)
+  } else {
+    act_vec_35 <- c(act_vec_35, cc)
+  }
+}
+
+BA_njan_act35 <- BA_njan_35[BA_njan_35$ID %in% act_vec_35, ]
+BA_njan_non35 <- BA_njan_35[BA_njan_35$ID %in% non_act_vec_35, ]
 
 
 
